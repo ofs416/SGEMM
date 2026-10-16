@@ -37,6 +37,8 @@
 *.exe
 *.out
 *.app
+main
+tests/test_*
 
 # Build directories
 build/

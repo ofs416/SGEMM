@@ -1,25 +1,28 @@
-#include <vector>
-#include <cstddef>
-#include <random>
-
 class Matrix {
 public:
-    Matrix(std::size_t rows, std::size_t cols)
-        : rows_(rows), cols_(cols), data_(rows * cols, 0.0f) {}
-
-    float& operator()(std::size_t i, std::size_t j)       { return data_[i * cols_ + j]; }
-    float  operator()(std::size_t i, std::size_t j) const { return data_[i * cols_ + j]; }
-
-    std::size_t rows() const { return rows_; }
-    std::size_t cols() const { return cols_; }
-    float* data() { return data_.data(); }
-
+    static constexpr std::size_t kAlign       = 64;                    // bytes
+    static constexpr std::size_t kAlignFloats = kAlign / sizeof(float); // 16
+    // ...
 private:
-    std::size_t rows_, cols_;
-    std::vector<float> data_;
+    struct AlignedDelete {
+        void operator()(float* p) const noexcept {
+            ::operator delete[](p, std::align_val_t{kAlign});
+        }
+    };
+    using Buffer = std::unique_ptr<float[], AlignedDelete>;
+
+    static Buffer allocate(std::size_t n) {
+        if (n == 0) return Buffer{};
+        void* p = ::operator new[](n * sizeof(float), std::align_val_t{kAlign});
+        return Buffer{static_cast<float*>(p)};
+    }
+
+    static constexpr std::size_t round_up(std::size_t x, std::size_t m) noexcept {
+        return (x + m - 1) / m * m;
+    }
+
+    std::size_t rows_ = 0;
+    std::size_t cols_ = 0;
+    std::size_t ld_   = 0;   // floats between the start of row i and row i+1
+    Buffer      data_;
 };
-
-int main() {
-
-    return 0;
-}
