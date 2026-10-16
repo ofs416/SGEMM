@@ -32,8 +32,26 @@ public:
     size_type rows() const noexcept { return rows_; }
     size_type cols() const noexcept { return cols_; }
 
+    double&       operator()(size_type i, size_type j)       { return data_[i * cols_ + j]; }
+    const double& operator()(size_type i, size_type j) const { return data_[i * cols_ + j]; }
+
+    // Checked versions, like std::vector::at
+    double& at(size_type i, size_type j) {
+        check_index(i, j);
+        return (*this)(i, j);
+    }
+    const double& at(size_type i, size_type j) const {
+        check_index(i, j);
+        return (*this)(i, j);
+    }
+
 private:
     size_type rows_ = 0;
     size_type cols_ = 0;
     std::vector<double> data_;   // row-major: (i, j) -> i * cols_ + j
+
+    void check_index(size_type i, size_type j) const {
+        if (i >= rows_ || j >= cols_)
+            throw std::out_of_range("Matrix: index out of range");
+    }
 };

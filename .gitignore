@@ -38,7 +38,7 @@
 *.out
 *.app
 main
-tests/test_*
+tests/exe/
 
 # Build directories
 build/
@@ -65,6 +65,5 @@ vcpkg_installed/
 # debug information files
 *.dwo
 
-# test output & cache
-Testing/
+
 .cache/
