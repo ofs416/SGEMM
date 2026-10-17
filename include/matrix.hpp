@@ -59,6 +59,20 @@ public:
         return lhs;
     }
 
+    // Scalar Addition
+    Matrix& operator+=(const double s) {
+        for (auto& x : data_) x += s;
+        return *this;
+    }
+    friend Matrix operator+(Matrix lhs, const double s) {
+        lhs += s;
+        return lhs;
+    }
+    friend Matrix operator+(const double s, Matrix rhs) {
+        rhs += s;
+        return rhs;
+    }
+
     // Matrix Subtraction
     Matrix& operator-=(const Matrix& rhs) {
         check_same_shape(rhs, "-=");
@@ -69,6 +83,19 @@ public:
     friend Matrix operator-(Matrix lhs, const Matrix& rhs) {
         lhs -= rhs;
         return lhs;
+    }
+
+    // Scalar Subtraction
+    Matrix& operator-=(const double s) {
+        for (auto& x : data_) x -= s;
+        return *this;
+    }
+    friend Matrix operator-(Matrix lhs, const double s) {
+        lhs -= s;
+        return lhs;
+    }
+    friend Matrix operator-(const double s, Matrix rhs) {
+        return -rhs + s;
     }
 
     // Scalar multiplication
@@ -83,6 +110,10 @@ public:
     friend Matrix operator*(const double s, Matrix rhs) {
         rhs *= s;
         return rhs;
+    }
+    friend Matrix operator-(Matrix m) {   // friend version avoids one extra copy
+        m *= -1.0;
+        return m;
     }
 
     // Element-wise multiplication
