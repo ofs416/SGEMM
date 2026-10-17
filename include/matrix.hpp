@@ -95,7 +95,9 @@ public:
         return lhs;
     }
     friend Matrix operator-(const double s, Matrix rhs) {
-        return -rhs + s;
+        rhs *= -1.0;
+        rhs += s;
+        return rhs;
     }
 
     // Scalar multiplication

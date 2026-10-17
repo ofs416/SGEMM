@@ -106,5 +106,50 @@ int main() {
     std::cout << "2 * fours  == eights\n";
     }
 
+    Matrix c{{1, 2},
+             {3, 4}};
+    c += 1.5;
+    assert(c(0, 0) == 2.5 && c(0, 1) == 3.5 && c(1, 0) == 4.5 && c(1, 1) == 5.5);
+    std::cout << "c += 1.5 adds to every element\n";
+
+    c -= 1.5;
+    assert(c(0, 0) == 1 && c(0, 1) == 2 && c(1, 0) == 3 && c(1, 1) == 4);
+    std::cout << "c -= 1.5 restores c\n";
+
+    {
+    Matrix r = c + 10;
+    assert(r(0, 0) == 11 && r(1, 1) == 14);
+    assert(c(0, 0) == 1 && c(1, 1) == 4);
+    std::cout << "c + 10 adds and leaves c unchanged\n";
+    }
+    {
+    Matrix r = 10 + c;
+    assert(r(0, 0) == 11 && r(1, 1) == 14);
+    std::cout << "10 + c == c + 10\n";
+    }
+    {
+    Matrix r = c - 10;
+    assert(r(0, 0) == -9 && r(1, 1) == -6);
+    assert(c(0, 0) == 1 && c(1, 1) == 4);
+    std::cout << "c - 10 subtracts and leaves c unchanged\n";
+    }
+    {
+    Matrix r = 10 - c;   // not commutative: must be 10 - c, not c - 10
+    assert(r(0, 0) == 9 && r(0, 1) == 8 && r(1, 0) == 7 && r(1, 1) == 6);
+    assert(c(0, 0) == 1 && c(1, 1) == 4);
+    std::cout << "10 - c is reversed subtraction\n";
+    }
+    {
+    Matrix r = -c;
+    assert(r(0, 0) == -1 && r(0, 1) == -2 && r(1, 0) == -3 && r(1, 1) == -4);
+    assert(c(0, 0) == 1 && c(1, 1) == 4);
+    std::cout << "-c negates and leaves c unchanged\n";
+    }
+    {
+    Matrix r = -(c + c);
+    assert(r(0, 0) == -2 && r(1, 1) == -8);
+    std::cout << "-(c + c) works on a temporary\n";
+    }
+
     std::cout << "all assertions passed\n";
 }
