@@ -40,6 +40,17 @@ int main() {
         std::cout << "Out of bounds:  caught \"" << e.what() << "\"\n";
     }
 
+    Matrix twos(2, 2, 2.0);
+    Matrix nines(2, 2, 9.0);
+    twos += sevens;
+    for (int i = 0; i < twos.rows(); i++) {
+        for (int j = 0; j < twos.cols(); j++) {
+            assert(twos(i, j) == nines(i, j));
+        };
+    };
+    std::cout << "twos += sevens == nines \n";
+
+
 
     std::cout << "all assertions passed\n";
 }

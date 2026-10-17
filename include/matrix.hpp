@@ -29,9 +29,11 @@ public:
         }
     }
 
+    // const indicates this returns a copy and is not able to write
     size_type rows() const noexcept { return rows_; }
     size_type cols() const noexcept { return cols_; }
 
+    // Two versions to allow for read only (const) Matrix
     double&       operator()(size_type i, size_type j)       { return data_[i * cols_ + j]; }
     const double& operator()(size_type i, size_type j) const { return data_[i * cols_ + j]; }
 
@@ -45,6 +47,15 @@ public:
         return (*this)(i, j);
     }
 
+    // Addition
+    Matrix& operator+=(const Matrix& rhs) {
+        check_same_shape(rhs, "+=");
+        for (size_type k = 0; k < data_.size(); ++k)
+            data_[k] += rhs.data_[k];
+        return *this;                              // allows a += b += c
+    }
+
+
 private:
     size_type rows_ = 0;
     size_type cols_ = 0;
@@ -53,5 +64,10 @@ private:
     void check_index(size_type i, size_type j) const {
         if (i >= rows_ || j >= cols_)
             throw std::out_of_range("Matrix: index out of range");
+    }
+
+    void check_same_shape(const Matrix& rhs, const char* op) const {
+        if (rows_ != rhs.rows() || cols_ != rhs.cols())      // .rows() instead of .rows_
+            throw std::invalid_argument(std::string("Matrix ") + op + ": shape mismatch");
     }
 };

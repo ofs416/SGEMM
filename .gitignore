@@ -67,3 +67,5 @@ vcpkg_installed/
 
 
 .cache/
+
+gcc_cs.md
