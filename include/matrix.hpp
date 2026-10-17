@@ -63,6 +63,11 @@ public:
         return *this;
     }
 
+    // Scalar multiplication
+    Matrix& operator*=(double s) {
+        for (auto& x : data_) x *= s;
+        return *this;
+    }
 
 private:
     size_type rows_ = 0;

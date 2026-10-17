@@ -58,6 +58,14 @@ int main() {
     };
     std::cout << "twos is 2.0 again! \n";
 
+    twos *= 2.0;
+    for (int i = 0; i < twos.rows(); i++) {
+        for (int j = 0; j < twos.cols(); j++) {
+            assert(twos(i, j) == 4.0);
+        };
+    };
+    std::cout << "twos *= 2.0 gives 4.0 \n";
+
 
 
     std::cout << "all assertions passed\n";
