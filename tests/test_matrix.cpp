@@ -66,6 +66,33 @@ int main() {
     };
     std::cout << "twos *= 2.0 gives 4.0 \n";
 
+    Matrix a{{1, 2, 3},
+             {4, 5, 6}};
+    Matrix b{{2, 0, -1},
+             {0.5, 3, 10}};
+    Matrix ab{{2, 0, -3},
+              {2, 15, 60}};
+    a *= b;
+    for (int i = 0; i < a.rows(); i++) {
+        for (int j = 0; j < a.cols(); j++) {
+            assert(a(i, j) == ab(i, j));
+        };
+    };
+    std::cout << "a *= b is element wise \n";
+
+    try {
+        a *= twos;
+        std::cerr << "FAIL: expected exception\n";
+        return 1;
+    } catch (const std::invalid_argument& e) {
+        std::cout << "*= shape mismatch:  caught \"" << e.what() << "\"\n";
+    }
+    for (int i = 0; i < a.rows(); i++) {
+        for (int j = 0; j < a.cols(); j++) {
+            assert(a(i, j) == ab(i, j));
+        };
+    };
+    std::cout << "a unchanged after failed *= \n";
 
 
     std::cout << "all assertions passed\n";

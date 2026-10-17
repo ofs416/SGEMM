@@ -69,6 +69,14 @@ public:
         return *this;
     }
 
+    // Element wise multiplication
+    Matrix& operator*=(const Matrix& rhs) {        // function overloads
+        check_same_shape(rhs, "*=");
+        for (size_type k = 0; k < data_.size(); ++k)
+            data_[k] *= rhs.data_[k];
+        return *this;
+    }
+
 private:
     size_type rows_ = 0;
     size_type cols_ = 0;
