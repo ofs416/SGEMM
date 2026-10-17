@@ -47,34 +47,54 @@ public:
         return (*this)(i, j);
     }
 
-    // Addition
+    // Matrix Addition
     Matrix& operator+=(const Matrix& rhs) {
         check_same_shape(rhs, "+=");
         for (size_type k = 0; k < data_.size(); ++k)
             data_[k] += rhs.data_[k];
         return *this;
     }
+    friend Matrix operator+(Matrix lhs, const Matrix& rhs) {
+        lhs += rhs;
+        return lhs;
+    }
 
-    // Subtraction
+    // Matrix Subtraction
     Matrix& operator-=(const Matrix& rhs) {
         check_same_shape(rhs, "-=");
         for (size_type k = 0; k < data_.size(); ++k)
             data_[k] -= rhs.data_[k];
         return *this;
     }
+    friend Matrix operator-(Matrix lhs, const Matrix& rhs) {
+        lhs -= rhs;
+        return lhs;
+    }
 
     // Scalar multiplication
-    Matrix& operator*=(double s) {
+    Matrix& operator*=(const double s) {
         for (auto& x : data_) x *= s;
         return *this;
     }
+    friend Matrix operator*(Matrix lhs, const double s) {
+        lhs *= s;
+        return lhs;
+    }
+    friend Matrix operator*(const double s, Matrix rhs) {
+        rhs *= s;
+        return rhs;
+    }
 
-    // Element wise multiplication
+    // Element-wise multiplication
     Matrix& operator*=(const Matrix& rhs) {        // function overloads
         check_same_shape(rhs, "*=");
         for (size_type k = 0; k < data_.size(); ++k)
             data_[k] *= rhs.data_[k];
         return *this;
+    }
+    friend Matrix operator*(Matrix lhs, const Matrix& rhs) {
+        lhs *= rhs;
+        return lhs;
     }
 
 private:
@@ -88,7 +108,7 @@ private:
     }
 
     void check_same_shape(const Matrix& rhs, const char* op) const {
-        if (rows_ != rhs.rows_ || cols_ != rhs.rows_)
+        if (rows_ != rhs.rows_ || cols_ != rhs.cols_)
             throw std::invalid_argument(std::string("Matrix ") + op + ": shape mismatch");
     }
 };

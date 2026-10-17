@@ -94,6 +94,17 @@ int main() {
     };
     std::cout << "a unchanged after failed *= \n";
 
+    Matrix fours(2, 2, 4.0);
+    {
+    Matrix eights = fours * 2;
+    assert(eights(0, 0) == 8.0);
+    std::cout << "fours * 2 == eights\n";
+    }
+    {
+    Matrix eights = 2 * fours;
+    assert(eights(0, 0) == 8.0);
+    std::cout << "2 * fours  == eights\n";
+    }
 
     std::cout << "all assertions passed\n";
 }
