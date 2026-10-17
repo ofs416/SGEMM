@@ -88,7 +88,7 @@ private:
     }
 
     void check_same_shape(const Matrix& rhs, const char* op) const {
-        if (rows_ != rhs.rows() || cols_ != rhs.cols())      // .rows() instead of .rows_
+        if (rows_ != rhs.rows_ || cols_ != rhs.rows_)
             throw std::invalid_argument(std::string("Matrix ") + op + ": shape mismatch");
     }
 };
