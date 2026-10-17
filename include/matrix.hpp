@@ -52,7 +52,15 @@ public:
         check_same_shape(rhs, "+=");
         for (size_type k = 0; k < data_.size(); ++k)
             data_[k] += rhs.data_[k];
-        return *this;                              // allows a += b += c
+        return *this;
+    }
+
+    // Subtraction
+    Matrix& operator-=(const Matrix& rhs) {
+        check_same_shape(rhs, "-=");
+        for (size_type k = 0; k < data_.size(); ++k)
+            data_[k] -= rhs.data_[k];
+        return *this;
     }
 
 

@@ -50,6 +50,14 @@ int main() {
     };
     std::cout << "twos += sevens == nines \n";
 
+    twos -= sevens;
+    for (int i = 0; i < twos.rows(); i++) {
+        for (int j = 0; j < twos.cols(); j++) {
+            assert(twos(i, j) == 2.0);
+        };
+    };
+    std::cout << "twos is 2.0 again! \n";
+
 
 
     std::cout << "all assertions passed\n";
