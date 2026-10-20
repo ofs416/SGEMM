@@ -40,6 +40,9 @@ public:
     T&       operator()(size_type i, size_type j)       { return data_[i * cols_ + j]; }
     const T& operator()(size_type i, size_type j) const { return data_[i * cols_ + j]; }
 
+    T*       data()       noexcept { return data_.data(); }
+    const T* data() const noexcept { return data_.data(); }
+
     // Checked versions, like std::vector::at
     T& at(size_type i, size_type j) {
         check_index(i, j);
