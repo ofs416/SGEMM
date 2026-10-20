@@ -12,5 +12,9 @@ FetchContent_Declare(benchmark  GIT_REPOSITORY https://github.com/google/benchma
 set(BENCHMARK_ENABLE_TESTING OFF)
 FetchContent_MakeAvailable(googletest benchmark)
 
-add_executable(main main.cpp)
+add_executable(main main.cpp src/sgemm.cpp)
 target_include_directories(main PRIVATE include)
+
+add_executable(bench_sgemm bench/bench_sgemm.cpp src/sgemm.cpp)
+target_include_directories(bench_sgemm PRIVATE include)
+target_link_libraries(bench_sgemm PRIVATE benchmark::benchmark)
