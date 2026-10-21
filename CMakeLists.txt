@@ -18,3 +18,9 @@ target_include_directories(main PRIVATE include)
 add_executable(bench_sgemm bench/bench_sgemm.cpp src/sgemm.cpp)
 target_include_directories(bench_sgemm PRIVATE include)
 target_link_libraries(bench_sgemm PRIVATE benchmark::benchmark)
+
+# OpenBLAS as the reference SGEMM to benchmark against
+find_library(OPENBLAS_LIB openblas REQUIRED)
+find_path(OPENBLAS_INCLUDE_DIR cblas.h PATH_SUFFIXES openblas openblas-pthread REQUIRED)
+target_include_directories(bench_sgemm PRIVATE ${OPENBLAS_INCLUDE_DIR})
+target_link_libraries(bench_sgemm PRIVATE ${OPENBLAS_LIB})

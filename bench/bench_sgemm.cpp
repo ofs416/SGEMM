@@ -1,4 +1,5 @@
 #include <benchmark/benchmark.h>
+#include <cblas.h>
 #include <chrono>
 #include <cstdio>
 #include <thread>
@@ -27,6 +28,17 @@ static int flops_per_cycle() {
 
 static double g_peak_1core = 0.0;  // FLOP/s
 
+// GFLOPS and fraction of single-core peak (all kernels run single-threaded)
+static void set_counters(benchmark::State& state, std::size_t n) {
+    // 2*n^3 flops per GEMM, reported as FLOP/s
+    const double flops = 2.0 * n * n * n;
+    state.counters["FLOPS"] = benchmark::Counter(
+        flops, benchmark::Counter::kIsIterationInvariantRate,
+        benchmark::Counter::kIs1000);
+    state.counters["%peak"] = benchmark::Counter(
+        100.0 * flops / g_peak_1core, benchmark::Counter::kIsIterationInvariantRate);
+}
+
 static void BM_sgemm_naive(benchmark::State& state) {
     const std::size_t n = state.range(0);
     std::vector<float> A(n * n, 1.0f), B(n * n, 1.0f), C(n * n, 0.0f);
@@ -35,16 +47,24 @@ static void BM_sgemm_naive(benchmark::State& state) {
         benchmark::DoNotOptimize(C.data());
         benchmark::ClobberMemory();
     }
-    // 2*n^3 flops per GEMM, reported as FLOP/s
-    const double flops = 2.0 * n * n * n;
-    state.counters["FLOPS"] = benchmark::Counter(
-        flops, benchmark::Counter::kIsIterationInvariantRate,
-        benchmark::Counter::kIs1000);
-    // fraction of single-core peak (the naive kernel is single-threaded)
-    state.counters["%peak"] = benchmark::Counter(
-        100.0 * flops / g_peak_1core, benchmark::Counter::kIsIterationInvariantRate);
+    set_counters(state, n);
 }
-BENCHMARK(BM_sgemm_naive)->RangeMultiplier(2)->Range(64, 1024)
+BENCHMARK(BM_sgemm_naive)->RangeMultiplier(2)->Range(256, 1024)
+    ->Unit(benchmark::kMillisecond)->Repetitions(5);
+
+// Reference: OpenBLAS, same row-major layout and no transposes
+static void BM_sgemm_openblas(benchmark::State& state) {
+    const std::size_t n = state.range(0);
+    std::vector<float> A(n * n, 1.0f), B(n * n, 1.0f), C(n * n, 0.0f);
+    for (auto _ : state) {
+        cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, n, n, n,
+                    1.0f, A.data(), n, B.data(), n, 0.0f, C.data(), n);
+        benchmark::DoNotOptimize(C.data());
+        benchmark::ClobberMemory();
+    }
+    set_counters(state, n);
+}
+BENCHMARK(BM_sgemm_openblas)->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
 
 int main(int argc, char** argv) {
@@ -53,8 +73,12 @@ int main(int argc, char** argv) {
     const unsigned cores = std::thread::hardware_concurrency() / 2;  // assumes SMT
     g_peak_1core = ghz * 1e9 * fpc;
     std::printf("Measured clock: %.2f GHz, %d FP32 FLOPs/cycle/core\n", ghz, fpc);
-    std::printf("Peak: %.1f GFLOP/s (1 core), %.1f GFLOP/s (%u cores)\n\n",
+    std::printf("Peak: %.1f GFLOP/s (1 core), %.1f GFLOP/s (%u cores)\n",
                 g_peak_1core / 1e9, g_peak_1core * cores / 1e9, cores);
+
+    // Single-threaded so OpenBLAS is compared like-for-like with our kernels
+    openblas_set_num_threads(1);
+    std::printf("OpenBLAS: %s, %d thread(s)\n\n", openblas_get_config(), openblas_get_num_threads());
 
     benchmark::Initialize(&argc, argv);
     if (benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
