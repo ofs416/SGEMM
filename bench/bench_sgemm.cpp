@@ -1,42 +1,16 @@
 #include <benchmark/benchmark.h>
 #include <cblas.h>
-#include <chrono>
 #include <cstdio>
-#include <thread>
 #include <vector>
 #include "sgemm.hpp"
 
-// Effective core clock: a chain of dependent integer adds retires 1 per cycle.
-static double measure_ghz() {
-    constexpr long iters = 200'000'000;
-    long x = 0;
-    auto t0 = std::chrono::steady_clock::now();
-    for (long i = 0; i < iters; ++i)
-        asm volatile("add $1, %0\n\tadd $1, %0\n\tadd $1, %0\n\tadd $1, %0\n\tadd $1, %0\n\t"
-                     "add $1, %0\n\tadd $1, %0\n\tadd $1, %0\n\tadd $1, %0\n\tadd $1, %0"
-                     : "+r"(x));
-    auto t1 = std::chrono::steady_clock::now();
-    return iters * 10.0 / std::chrono::duration<double, std::nano>(t1 - t0).count();
-}
-
-// FP32 FLOPs/cycle/core assuming 2 FMA pipes: lanes * 2 (mul+add) * 2 pipes
-static int flops_per_cycle() {
-    if (__builtin_cpu_supports("avx512f")) return 16 * 2 * 2;
-    if (__builtin_cpu_supports("fma"))     return 8 * 2 * 2;
-    return 4 * 2;  // SSE: separate mul and add pipes
-}
-
-static double g_peak_1core = 0.0;  // FLOP/s
-
-// GFLOPS and fraction of single-core peak (all kernels run single-threaded)
+// Report GFLOPS (all kernels run single-threaded)
 static void set_counters(benchmark::State& state, std::size_t n) {
     // 2*n^3 flops per GEMM, reported as FLOP/s
     const double flops = 2.0 * n * n * n;
     state.counters["FLOPS"] = benchmark::Counter(
         flops, benchmark::Counter::kIsIterationInvariantRate,
         benchmark::Counter::kIs1000);
-    state.counters["%peak"] = benchmark::Counter(
-        100.0 * flops / g_peak_1core, benchmark::Counter::kIsIterationInvariantRate);
 }
 
 static void BM_sgemm_naive(benchmark::State& state) {
@@ -68,14 +42,6 @@ BENCHMARK(BM_sgemm_openblas)->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
 
 int main(int argc, char** argv) {
-    const double ghz = measure_ghz();
-    const int fpc = flops_per_cycle();
-    const unsigned cores = std::thread::hardware_concurrency() / 2;  // assumes SMT
-    g_peak_1core = ghz * 1e9 * fpc;
-    std::printf("Measured clock: %.2f GHz, %d FP32 FLOPs/cycle/core\n", ghz, fpc);
-    std::printf("Peak: %.1f GFLOP/s (1 core), %.1f GFLOP/s (%u cores)\n",
-                g_peak_1core / 1e9, g_peak_1core * cores / 1e9, cores);
-
     // Single-threaded so OpenBLAS is compared like-for-like with our kernels
     openblas_set_num_threads(1);
     std::printf("OpenBLAS: %s, %d thread(s)\n\n", openblas_get_config(), openblas_get_num_threads());

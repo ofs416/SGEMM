@@ -19,18 +19,18 @@ for (std::size_t i = 0; i < M; ++i) {
 
 ### 1.1 No compiler flags
 
-| n    | naive                          | OpenBLAS (1 thread)        | naive slower by |
-|------|--------------------------------|----------------------------|-----------------|
-| 256  | 51.0 ms (0.67 GFLOP/s, 0.5%)   | 0.32 ms (108 GFLOP/s, 83%) | ~160×           |
-| 512  | 413 ms (0.66 GFLOP/s, 0.5%)    | 2.41 ms (114 GFLOP/s, 88%) | ~170×           |
-| 1024 | 4068 ms (0.54 GFLOP/s, 0.4%)   | 19.4 ms (113 GFLOP/s, 87%) | ~210×           |
+| n    | naive                  | OpenBLAS (1 thread)   | naive slower by |
+|------|------------------------|-----------------------|-----------------|
+| 256  | 51.0 ms (0.67 GFLOP/s) | 0.32 ms (108 GFLOP/s) | ~160×           |
+| 512  | 413 ms (0.66 GFLOP/s)  | 2.41 ms (114 GFLOP/s) | ~170×           |
+| 1024 | 4068 ms (0.54 GFLOP/s) | 19.4 ms (113 GFLOP/s) | ~210×           |
 
 ### 1.2 `-O3 -march=native`
 
-| n    | naive                          | OpenBLAS (1 thread)        | naive slower by | flag speedup |
-|------|--------------------------------|----------------------------|-----------------|--------------|
-| 256  | 22.2 ms (1.5 GFLOP/s, 1.2%)    | 0.32 ms (108 GFLOP/s, 83%) | ~70×            | 2.3×         |
-| 512  | 275 ms (1.0 GFLOP/s, 0.8%)     | 2.41 ms (114 GFLOP/s, 88%) | ~115×           | 1.5×         |
-| 1024 | 4028 ms (0.54 GFLOP/s, 0.4%)   | 19.4 ms (113 GFLOP/s, 87%) | ~210×           | 1.0×         |
+| n    | naive                  | OpenBLAS (1 thread)   | naive slower by | flag speedup |
+|------|------------------------|-----------------------|-----------------|--------------|
+| 256  | 22.2 ms (1.5 GFLOP/s)  | 0.32 ms (108 GFLOP/s) | ~70×            | 2.3×         |
+| 512  | 275 ms (1.0 GFLOP/s)   | 2.41 ms (114 GFLOP/s) | ~115×           | 1.5×         |
+| 1024 | 4028 ms (0.54 GFLOP/s) | 19.4 ms (113 GFLOP/s) | ~210×           | 1.0×         |
 
-Percentages are of single-core peak (130 GFLOP/s). OpenBLAS is a prebuilt library, so its numbers don't depend on these flags.
+OpenBLAS is a prebuilt library, so its numbers don't depend on these flags.
