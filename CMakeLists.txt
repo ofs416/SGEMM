@@ -12,12 +12,23 @@ FetchContent_Declare(benchmark  GIT_REPOSITORY https://github.com/google/benchma
 set(BENCHMARK_ENABLE_TESTING OFF)
 FetchContent_MakeAvailable(googletest benchmark)
 
-add_executable(main main.cpp src/sgemm.cpp)
-target_include_directories(main PRIVATE include)
+# One source file per kernel; add new kernels here
+add_library(sgemm STATIC src/sgemm_naive.cpp src/matmul.cpp)
+target_include_directories(sgemm PUBLIC include)
 
-add_executable(bench_sgemm bench/bench_sgemm.cpp src/sgemm.cpp)
-target_include_directories(bench_sgemm PRIVATE include)
-target_link_libraries(bench_sgemm PRIVATE benchmark::benchmark)
+add_executable(main main.cpp)
+target_link_libraries(main PRIVATE sgemm)
+
+add_executable(bench_sgemm bench/bench_sgemm.cpp)
+target_link_libraries(bench_sgemm PRIVATE sgemm benchmark::benchmark)
+
+enable_testing()
+foreach(t test_matrix test_sgemm)
+  add_executable(${t} tests/${t}.cpp)
+  target_link_libraries(${t} PRIVATE sgemm)
+  target_compile_options(${t} PRIVATE -UNDEBUG)  # tests use assert
+  add_test(NAME ${t} COMMAND ${t})
+endforeach()
 
 # OpenBLAS as the reference SGEMM to benchmark against
 find_library(OPENBLAS_LIB openblas REQUIRED)
