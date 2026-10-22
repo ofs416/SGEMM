@@ -13,17 +13,20 @@ static void set_counters(benchmark::State& state, std::size_t n) {
         benchmark::Counter::kIs1000);
 }
 
-static void BM_sgemm_naive(benchmark::State& state) {
+template <auto Kernel>
+static void BM_sgemm(benchmark::State& state) {
     const std::size_t n = state.range(0);
     std::vector<float> A(n * n, 1.0f), B(n * n, 1.0f), C(n * n, 0.0f);
     for (auto _ : state) {
-        sgemm_naive(n, n, n, 1.0f, A.data(), B.data(), 0.0f, C.data());
+        Kernel(n, n, n, 1.0f, A.data(), B.data(), 0.0f, C.data());
         benchmark::DoNotOptimize(C.data());
         benchmark::ClobberMemory();
     }
     set_counters(state, n);
 }
-BENCHMARK(BM_sgemm_naive)->RangeMultiplier(2)->Range(256, 1024)
+BENCHMARK(BM_sgemm<sgemm_naive>)->Name("naive")->RangeMultiplier(2)->Range(256, 1024)
+    ->Unit(benchmark::kMillisecond)->Repetitions(5);
+BENCHMARK(BM_sgemm<sgemm_blocked>)->Name("blocked")->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
 
 // Reference: OpenBLAS, same row-major layout and no transposes
@@ -38,7 +41,7 @@ static void BM_sgemm_openblas(benchmark::State& state) {
     }
     set_counters(state, n);
 }
-BENCHMARK(BM_sgemm_openblas)->RangeMultiplier(2)->Range(256, 1024)
+BENCHMARK(BM_sgemm_openblas)->Name("openblas")->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
 
 int main(int argc, char** argv) {
