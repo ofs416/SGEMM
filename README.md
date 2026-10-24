@@ -110,3 +110,40 @@ Same kernel built with and without auto-vectorisation (`-fno-tree-vectorize -fno
 | 512  | 6.4 GFLOP/s | 28.5 GFLOP/s | ~4.4×                 |
 | 1024 | 5.9 GFLOP/s | 26.4 GFLOP/s | ~4.4×                 |
 
+
+
+## 3. Tiling over `k` (`sgemm_tile`)
+
+The reordered kernel still streams every row of `B` for each `i`. By the time the next `i` needs `B[k, :]` again it has been evicted from cache, so `B` is re-fetched from memory once per row of `C`.
+
+The fix is to tile the middle loop `k`. The outer loop steps `k` in blocks of `KC`, and for each block we sweep all rows `i`. The `KC` rows of `B` in the block (`KC * N * 4` bytes) are loaded once and reused by every `i` while they are still in cache. `KC = 32` is fixed, which keeps the `B` tile at 128 KB for `n = 1024`, well inside the 512 KB L2 of the Ryzen 5 5500. `beta` is applied in a separate pass up front.
+
+```cpp
+constexpr std::size_t KC = 32;
+
+for (std::size_t i = 0; i < M * N; i++)
+    C[i] *= beta;
+
+for (std::size_t kt = 0; kt < L; kt += KC) {
+    std::size_t kend = std::min(L, kt + KC);
+    for (std::size_t i = 0; i < M; i++) {
+        for (std::size_t k = kt; k < kend; k++) {
+            const float a = alpha * A[i * L + k];
+            for (std::size_t j = 0; j < N; j++)
+                C[i * N + j] += a * B[k * N + j];
+        }
+    }
+}
+```
+
+The cost is that `C` is now read and written once per tile instead of once in total, so `KC` can't be made arbitrarily small.
+
+### 3.1 `-O3 -march=native`
+
+| n    | tiled                  | OpenBLAS (1 thread)   | slower than OpenBLAS | speedup over reordered |
+|------|------------------------|-----------------------|----------------------|------------------------|
+| 256  | 0.93 ms (34.6 GFLOP/s) | 0.30 ms (107 GFLOP/s) | ~3.1×                | ~1.2×                  |
+| 512  | 7.46 ms (34.3 GFLOP/s) | 2.29 ms (111 GFLOP/s) | ~3.3×                | ~1.1×                  |
+| 1024 | 64.7 ms (31.5 GFLOP/s) | 19.2 ms (106 GFLOP/s) | ~3.4×                | ~1.1×                  |
+
+Tiling `k` alone gives a modest gain, since each tile still re-reads and re-writes `C`. The remaining gap to OpenBLAS is mostly register blocking and tiling `j` as well.

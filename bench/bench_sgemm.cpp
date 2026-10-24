@@ -28,6 +28,8 @@ BENCHMARK(BM_sgemm<sgemm_naive>)->Name("naive")->RangeMultiplier(2)->Range(256, 
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
 BENCHMARK(BM_sgemm<sgemm_ric>)->Name("ric")->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
+BENCHMARK(BM_sgemm<sgemm_tile>)->Name("tile")->RangeMultiplier(2)->Range(256, 1024)
+    ->Unit(benchmark::kMillisecond)->Repetitions(5);
 
 // Reference: OpenBLAS, same row-major layout and no transposes
 static void BM_sgemm_openblas(benchmark::State& state) {
@@ -44,6 +46,18 @@ static void BM_sgemm_openblas(benchmark::State& state) {
 BENCHMARK(BM_sgemm_openblas)->Name("openblas")->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
 
+// Console output limited to the mean, median and cv aggregate rows
+class AggregateReporter : public benchmark::ConsoleReporter {
+public:
+    void ReportRuns(const std::vector<Run>& runs) override {
+        std::vector<Run> keep;
+        for (const Run& r : runs)
+            if (r.run_type == Run::RT_Aggregate && r.aggregate_name != "stddev")
+                keep.push_back(r);
+        if (!keep.empty()) ConsoleReporter::ReportRuns(keep);
+    }
+};
+
 int main(int argc, char** argv) {
     // Single-threaded so OpenBLAS is compared like-for-like with our kernels
     openblas_set_num_threads(1);
@@ -51,6 +65,7 @@ int main(int argc, char** argv) {
 
     benchmark::Initialize(&argc, argv);
     if (benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
-    benchmark::RunSpecifiedBenchmarks();
+    AggregateReporter reporter;
+    benchmark::RunSpecifiedBenchmarks(&reporter);
     benchmark::Shutdown();
 }

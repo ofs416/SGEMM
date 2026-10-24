@@ -40,7 +40,7 @@ int main() {
     const std::size_t dims[][3] = {{1, 1, 1}, {7, 5, 3}, {63, 65, 64}, {100, 33, 257}, {5, 70, 1}};
     const float ab[][2] = {{1, 0}, {1, 1}, {2.5f, -0.5f}, {0, 1}};
     const struct { Kernel fn; const char* name; } kernels[] = {
-        {sgemm_naive, "naive"}, {sgemm_ric, "ric"}};
+        {sgemm_naive, "naive"}, {sgemm_ric, "ric"}, {sgemm_tile, "tile"}};
     for (auto& k : kernels)
         for (auto& d : dims)
             for (auto& p : ab)

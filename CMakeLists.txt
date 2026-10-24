@@ -13,7 +13,7 @@ set(BENCHMARK_ENABLE_TESTING OFF)
 FetchContent_MakeAvailable(googletest benchmark)
 
 # One source file per kernel; add new kernels here
-add_library(sgemm STATIC src/sgemm_naive.cpp src/sgemm_ric.cpp src/matmul.cpp)
+add_library(sgemm STATIC src/sgemm_naive.cpp src/sgemm_ric.cpp src/sgemm_tile.cpp src/matmul.cpp)
 target_include_directories(sgemm PUBLIC include)
 
 add_executable(bench_sgemm bench/bench_sgemm.cpp)
