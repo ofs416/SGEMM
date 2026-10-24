@@ -140,10 +140,45 @@ The cost is that `C` is now read and written once per tile instead of once in to
 
 ### 3.1 `-O3 -march=native`
 
+Mean of 10 repetitions. The reordered column was re-measured in the same session.
+
 | n    | tiled                  | OpenBLAS (1 thread)   | slower than OpenBLAS | speedup over reordered |
 |------|------------------------|-----------------------|----------------------|------------------------|
-| 256  | 0.93 ms (34.6 GFLOP/s) | 0.30 ms (107 GFLOP/s) | ~3.1×                | ~1.2×                  |
-| 512  | 7.46 ms (34.3 GFLOP/s) | 2.29 ms (111 GFLOP/s) | ~3.3×                | ~1.1×                  |
-| 1024 | 64.7 ms (31.5 GFLOP/s) | 19.2 ms (106 GFLOP/s) | ~3.4×                | ~1.1×                  |
+| 256  | 1.10 ms (28.8 GFLOP/s) | 0.29 ms (109 GFLOP/s) | ~3.8×                | ~0.98×                 |
+| 512  | 8.85 ms (28.8 GFLOP/s) | 2.23 ms (114 GFLOP/s) | ~4.0×                | ~0.99×                 |
+| 1024 | 80.4 ms (25.3 GFLOP/s) | 17.7 ms (115 GFLOP/s) | ~4.5×                | ~0.95×                 |
 
-Tiling `k` alone gives a modest gain, since each tile still re-reads and re-writes `C`. The remaining gap to OpenBLAS is mostly register blocking and tiling `j` as well.
+In this run tiling `k` alone gives no gain over the reordered kernel (earlier 5-repetition runs showed ~1.1×, within run-to-run noise on this machine). Each tile still re-reads and re-writes `C` on every `k` step, so the load/store count is unchanged (see 3.2). The remaining gap to OpenBLAS is mostly register blocking and tiling `j` as well.
+
+### 3.2 Unrolling `k` by 4 (`sgemm_tile_unroll`)
+
+The previous tile version, involves M\*N+M\*N\*L C reads and writes. We reduce this to  M\*N + M\*N\*L/4 by unrolling the K loop by a factor of 4. Each loaded `C[j]` four FMAs instead of one. A scalar loop handles the remainder when the tile length isn't a multiple of 4.
+
+```cpp
+std::size_t k = kt;
+for (; k + 4 <= kend; k += 4) {
+    const float a0 = alpha * A[i * L + k];
+    const float a1 = alpha * A[i * L + k + 1];
+    const float a2 = alpha * A[i * L + k + 2];
+    const float a3 = alpha * A[i * L + k + 3];
+    const float* b0 = &B[k * N];
+    const float* b1 = &B[(k + 1) * N];
+    const float* b2 = &B[(k + 2) * N];
+    const float* b3 = &B[(k + 3) * N];
+    for (std::size_t j = 0; j < N; j++)
+        C[i * N + j] += a0 * b0[j] + a1 * b1[j] + a2 * b2[j] + a3 * b3[j];
+}
+for (; k < kend; k++) { /* scalar remainder, as in 3 */ }
+```
+
+The sum is now added to `C` in a different order, so results can differ from the tiled kernel in the last bits.
+
+Mean of 10 repetitions.
+
+| n    | tiled                  | unrolled                | speedup | slower than OpenBLAS |
+|------|------------------------|-------------------------|---------|----------------------|
+| 256  | 1.10 ms (28.8 GFLOP/s) | 0.552 ms (57.7 GFLOP/s) | 1.99×   | ~1.9×                |
+| 512  | 8.85 ms (28.8 GFLOP/s) | 5.63 ms (45.2 GFLOP/s)  | 1.57×   | ~2.5×                |
+| 1024 | 80.4 ms (25.3 GFLOP/s) | 53.6 ms (38.0 GFLOP/s)  | 1.50×   | ~3.0×                |
+
+The gain shrinks as `n` grows because the kernel becomes limited by streaming `B` and `C` through the cache rather than by `C` read-modify-writes. The next steps are tiling `j` as well and a register-blocked microkernel.
