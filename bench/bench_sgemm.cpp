@@ -26,7 +26,7 @@ static void BM_sgemm(benchmark::State& state) {
 }
 BENCHMARK(BM_sgemm<sgemm_naive>)->Name("naive")->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
-BENCHMARK(BM_sgemm<sgemm_blocked>)->Name("blocked")->RangeMultiplier(2)->Range(256, 1024)
+BENCHMARK(BM_sgemm<sgemm_ric>)->Name("ric")->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(5);
 
 // Reference: OpenBLAS, same row-major layout and no transposes

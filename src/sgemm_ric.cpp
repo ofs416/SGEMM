@@ -4,8 +4,8 @@
 // Data is loaded from memory with a fixed cache size, almost everytime we need to access multiple rows we get cache misses
 // This is fixed by reordering the loops. Mathematically, we compute the outer product in the inner loop as opposed to the inner prodcut
 
-// Blocked triple loop. Row-major: A(i, k) = A[i * L + k], B(k, j) = B[k * N + j]
-void sgemm_blocked(std::size_t M, std::size_t N, std::size_t L,
+// Ric triple loop. Row-major: A(i, k) = A[i * L + k], B(k, j) = B[k * N + j]
+void sgemm_ric(std::size_t M, std::size_t N, std::size_t L,
                  float alpha, const float* A, const float* B,
                  float beta, float* C) {
     for (std::size_t i = 0; i < M; ++i) {
@@ -20,7 +20,7 @@ void sgemm_blocked(std::size_t M, std::size_t N, std::size_t L,
 }
 
 // ┌──────┬────────────────────────┬───────────────────────┬─────────────────┐
-// │  n   │        Blocked         │  OpenBLAS (1 thread)  │ naive slower by │
+// │  n   │          Ric           │  OpenBLAS (1 thread)  │ naive slower by │
 // ├──────┼────────────────────────┼───────────────────────┼─────────────────┤
 // │ 256  │ 1.16 ms (28.7 GFLOP/s) │ 0.32 ms (108 GFLOP/s) │ ~3.62×          │
 // ├──────┼────────────────────────┼───────────────────────┼─────────────────┤

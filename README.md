@@ -69,7 +69,7 @@ OpenBLAS is a prebuilt library, so its numbers don't depend on these flags.
 | 1024 | 4068 ms (0.54)         | 4094 ms (0.54) | 4130 ms (0.53)      | 1.0×                  |
 
 
-## 2. Loop reorder (`sgemm_blocked`)
+## 2. Loop reorder (`sgemm_ric`)
 
 In the naive version the inner loop walks down a column of `B` (`B[k * N + j]` with `k` varying), a stride of `N` floats. Matrices are row-major and a cache line holds consecutive elements, so almost every access of `B` touches a different cache line and we get a high rate of cache misses.
 
@@ -87,7 +87,7 @@ for (std::size_t i = 0; i < M; ++i) {
 }
 ```
 
-This only reorders the loops and does no tiling, so the name `blocked` is a placeholder for the tiled version to come. Rows of `B` and `C` are still streamed in full for every `i`, so once a row no longer fits in cache the speed drops with `n` (28.7 to 26.2 GFLOP/s below).
+This only reorders the loops and does no tiling, so `ric` (reordered loops) is not yet the tiled version. Rows of `B` and `C` are still streamed in full for every `i`, so once a row no longer fits in cache the speed drops with `n` (28.7 to 26.2 GFLOP/s below).
 
 ### 2.1 `-O3 -march=native`
 

@@ -7,7 +7,7 @@ void sgemm_naive(std::size_t M, std::size_t N, std::size_t L,
                  float alpha, const float* A, const float* B,
                  float beta, float* C);
 
-void sgemm_blocked(std::size_t M, std::size_t N, std::size_t L,
+void sgemm_ric(std::size_t M, std::size_t N, std::size_t L,
                  float alpha, const float* A, const float* B,
                  float beta, float* C);
 
