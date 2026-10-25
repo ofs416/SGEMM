@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
+# Clang is the reference compiler (matches the llvm-mca analysis); override with -DCMAKE_CXX_COMPILER=...
+if(NOT DEFINED CMAKE_CXX_COMPILER AND NOT DEFINED ENV{CXX})
+  set(CMAKE_CXX_COMPILER clang++)
+endif()
 project(sgemm CXX)
 set(CMAKE_CXX_STANDARD 20)
 if(NOT CMAKE_BUILD_TYPE)
