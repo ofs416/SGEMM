@@ -43,24 +43,24 @@ int main() {
     Matrix twos(2, 2, 2.0);
     Matrix nines(2, 2, 9.0);
     twos += sevens;
-    for (int i = 0; i < twos.rows(); i++) {
-        for (int j = 0; j < twos.cols(); j++) {
+    for (int i = 0.0f; i < twos.rows(); i++) {
+        for (int j = 0.0f; j < twos.cols(); j++) {
             assert(twos(i, j) == nines(i, j));
         };
     };
     std::cout << "twos += sevens == nines \n";
 
     twos -= sevens;
-    for (int i = 0; i < twos.rows(); i++) {
-        for (int j = 0; j < twos.cols(); j++) {
+    for (int i = 0.0f; i < twos.rows(); i++) {
+        for (int j = 0.0f; j < twos.cols(); j++) {
             assert(twos(i, j) == 2.0);
         };
     };
     std::cout << "twos is 2.0 again! \n";
 
     twos *= 2.0;
-    for (int i = 0; i < twos.rows(); i++) {
-        for (int j = 0; j < twos.cols(); j++) {
+    for (int i = 0.0f; i < twos.rows(); i++) {
+        for (int j = 0.0f; j < twos.cols(); j++) {
             assert(twos(i, j) == 4.0);
         };
     };
@@ -87,8 +87,8 @@ int main() {
     } catch (const std::invalid_argument& e) {
         std::cout << "*= shape mismatch:  caught \"" << e.what() << "\"\n";
     }
-    for (int i = 0; i < a.rows(); i++) {
-        for (int j = 0; j < a.cols(); j++) {
+    for (int i = 0.0f; i < a.rows(); i++) {
+        for (int j = 0.0f; j < a.cols(); j++) {
             assert(a(i, j) == ab(i, j));
         };
     };
