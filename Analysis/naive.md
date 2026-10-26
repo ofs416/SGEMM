@@ -135,7 +135,7 @@ Note that as we scale N, performance further degrades unlike OpenBlas, indicatin
 Inner loop `.LBB0_13` of `src/mk_naive.cpp`, analysed with llvm-mca.
 
 ```bash
-clang++ ./src/mk_naive.cpp -O3 -march=native -ffast-math -S -o - \
+clang++ ./src/mk_naive.cpp -O3 -march=native -S -o - \
   | awk '/^\.LBB0_13:/{f=1;next} f{print} /jne[[:space:]]+\.LBB0_13/{exit}' \
   | llvm-mca -mcpu=znver3 -iterations=200
 ```
