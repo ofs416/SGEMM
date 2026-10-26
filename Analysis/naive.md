@@ -13,7 +13,9 @@ void sgemm_naive(std::size_t M, std::size_t N, std::size_t L,
 }
 ```
 
-Godbolt with 'x86-64 clang18.1.0 -O3 -march=znver3'.
+# GodBolt
+
+with 'x86-64 clang18.1.0 -O3 -march=znver3'.
 
 ```asm
 mk_naive(unsigned long, unsigned long, float const*, float const*):
@@ -94,13 +96,38 @@ Here the limiting factor is the 8 sequential FMAs from the loop unrolled by a fa
 
 With each loop performing 8 * 2 = 16 flops
 
-So thats 0.5 flops per cycle, assuming that l1 cache is fully utilised. at ~ 4 GHz thats 2 GFLOP/s. Comparing this to the google bench results below, we observe we almost hit half of this with small n. Therefore indicating that we 
+So that's 0.5 flops per cycle
 
-| n    | Naive `-O0`            |  Naive `-O3 -march=native` | OpenBLAS (1 thread)   | Naive  slower by |
-|------|------------------------|----------------------------|-----------------------|------------------|
-| 256  | 50.2 ms (0.68 GFLOP/s) |   35.7 ms (0.96 GFLOP/s)   | 0.32 ms (108 GFLOP/s) | ~112×            |
-| 512  | 410 ms (0.67 GFLOP/s)  |   351 ms (0.78 GFLOP/s)    | 2.43 ms (113 GFLOP/s) | ~144×            |
-| 1024 | 4004 ms (0.54 GFLOP/s) |   4070 ms (0.54 GFLOP/s)   | 19.0 ms (114 GFLOP/s) | ~214×            |
+Assuming that l1 cache is fully utilised. at ~ 4 GHz that's 2 GFLOP/s per chain of FMAs.
+
+ Each `C[i][j]` is its own dot product, and the next one starts with `vxorps` on a renamed register. It executes while the previous chain is still waiting on its 4-cycle FMAs. This is still scalar, one float per FMA, just several FMAs in flight at once.
+
+ An FMA unit is pipelined: latency is 4 cycles, but it can accept a new independent FMA every cycle (`s1`–`s4` are the pipeline stages):
+
+| Cycle   | 1  | 2  | 3  | 4  | 5  | 6  | 7  |
+|---------|----|----|----|----|----|----|----|
+| FMA #1  | s1 | s2 | s3 | s4 |    |    |    |
+| FMA #2  |    | s1 | s2 | s3 | s4 |    |    |
+| FMA #3  |    |    | s1 | s2 | s3 | s4 |    |
+| FMA #4  |    |    |    | s1 | s2 | s3 | s4 |
+
+From cycle 4 the pipeline is full: one FMA completes and one starts every cycle. A dependent FMA cannot enter until the previous one finishes `s4`, which is why a single chain only manages 1 FMA per 4 cycles.
+
+We know zen3 can start 2 FMA/cycle (16 GFLOP/s), therefore 8 independent chains could be in flight at once. Load limits of 3 loads/cycle keeps us down to 1.5 FMA/cycle (12 GFLOP/s) from the 2 loads needed per FMA. Lastly, limits on the reorder buff mean we can only have 4 chains in flight at once, hence 1 FMA/cycle (8 GFLOP/s).
+
+# Google Benchmark
+
+| n    | Naive `-O0`            | Naive `-O3 -march=native` | OpenBLAS (1 thread)   | Naive slower by |
+|------|------------------------|---------------------------|-----------------------|-----------------|
+| 256  | 50.2 ms (0.68 GFLOP/s) | 35.7 ms (0.96 GFLOP/s)    | 0.32 ms (108 GFLOP/s) | ~112×           |
+| 512  | 410 ms (0.67 GFLOP/s)  | 351 ms (0.78 GFLOP/s)     | 2.43 ms (113 GFLOP/s) | ~144×           |
+| 1024 | 4004 ms (0.54 GFLOP/s) | 4070 ms (0.54 GFLOP/s)    | 19.0 ms (114 GFLOP/s) | ~214×           |
+
+ Comparing this to the Google Benchmark results, we observe we only hit a fraction of this. Indicating that we are poorly utilising the cache.
+
+With small N ~= 16, we almost reach this upper-limit, then as we increase N the number of chains is limited by the reorder buffer, which allows lookahead and early starts on instructions. Eventually the number of chains in flight hits 1 (2 GFLOP/s upper-limit), with cache misses restricting us further.
+
+Note that as we scale N, performance further degrades unlike OpenBlas, indicating that we are poorly utilising the caches.
 
 
 # llvm-mca: `mk_naive` inner loop (znver3)
@@ -119,13 +146,15 @@ clang++ ./src/mk_naive.cpp -O3 -march=native -ffast-math -S -o - \
 |---|---|
 | Iterations | 200 |
 | Instructions | 5000 (25 / iter) |
-| Total cycles | 6411 (~32 / iter) |
+| Total cycles | 6411 (~32 / iter) |         
 | Total uOps | 5200 |
 | Dispatch width | 6 |
 | uOps per cycle | 0.81 |
 | IPC | 0.78 |
 | Block RThroughput | 8.0 |
 
+Here we see that ~32 cycles per iteration agree with our calculation.
+Note we are not resource bound so the Block RThroughput is not the relevant number of cycle per iteration, as it assumes each instruction is independent.
 
 ## Resource pressure per iteration
 
@@ -141,3 +170,7 @@ clang++ ./src/mk_naive.cpp -O3 -march=native -ffast-math -S -o - \
 | Zn3LSU (x3) | 5.33 / 5.34 / 5.34 |
 | Zn3Load (x3) | 5.33 / 5.34 / 5.34 |
 | Zn3Store (x2) | - |
+
+# Next-Step
+
+Currently we are poorly utilising caches and relying on sequential FMA which only use 1 of the 8 available lanes at a time. In the next iteration RIC, we will perform an optimisation which enable vectorisation and better utilises the cache.
