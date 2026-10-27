@@ -69,17 +69,59 @@ In reality we arent limited by FMA throughput. Zen 3 can do 2 loads, 1 store and
 
 Each iteration above contains 8 loads, 4 stores (from 4 FMAs) and 4 FMA, hence we are limited to 4 cycles per iteration. In one iteration we perform 8 * 4 * 2 = 64 flops. Which is 16 flops per cycle and hence an upper-limit of ~=64 GFLOP/s @ 4GHz.
 
-Thus far we have not checked the limit from load latency
+Thus far we have not checked the limit from load latency (see llvm-mca below, which finds a tighter 6 cycle limit)
+
+
+# llvm-mca: `mk_ric` inner loop (znver3)
+
+Inner loop `.LBB0_4` of `src/mk_ric.cpp`, analysed with llvm-mca.
+
+```bash
+clang++ ./src/mk_ric.cpp -O3 -march=native -S -o - \
+  | awk '/^\.LBB0_4:/{f=1;next} f{print} /jne[[:space:]]+\.LBB0_4/{exit}' \
+  | llvm-mca -mcpu=znver3 -iterations=200
+```
+
+## Summary
+
+| Metric | Value |
+|---|---|
+| Iterations | 200 |
+| Instructions | 3000 (15 / iter) |
+| Total cycles | 1210 (~6 / iter) |
+| Total uOps | 3000 |
+| Dispatch width | 6 |
+| uOps per cycle | 2.48 |
+| IPC | 2.48 |
+| Block RThroughput | 6.0 |
+
+Unlike naive there is no dependency chain, so here Block RThroughput is the relevant number: ~6 cycles per iteration, i.e. 64 flops / 6 = ~10.7 flops/cycle, ~43 GFLOP/s @ 4 GHz.
+This is slower than the 4 cycles (64 GFLOP/s) estimated above from load, store and FMA counts alone.
+
+## Resource pressure per iteration
+
+| Resource | Cycles |
+|---|---:|
+| Zn3AGU0 / 1 / 2 | - |
+| Zn3ALU0–3 | 0.60 each |
+| Zn3BRU1 | 0.60 |
+| Zn3FPP0 / FPP1 | 2.00 each |
+| Zn3FPP2 / FPP3 | - |
+| Zn3FPP45 (x2) | 6.00 each |
+| Zn3FPSt | 4.00 |
+| Zn3LSU (x3) | 4.00 each |
+| Zn3Load (x3) | 2.67 each |
+| Zn3Store (x2) | 2.00 each |
+
+The bottleneck is `Zn3FPP45`: all 12 vector memory uOps (4 loads, 4 FMA memory operands, 4 stores) go through its 2 units, 12 / 2 = 6 cycles.
+The FMA pipes (`FPP0/1`) are only busy 2 of 6 cycles, so the kernel is memory-op bound, not FMA bound.
+Stores (`FPSt`, 4 cycles) and the LSUs (4 cycles) are close behind but not binding.
 
 
 # Google Benchmark
 
-┌──────┬─────────────────────────┬───────────────────────┬──────────────────────┐
-│  n   │           Ric           │  OpenBLAS (1 thread)  │ Ric slower than BLAS │
-├──────┼─────────────────────────┼───────────────────────┼──────────────────────┤
-│  256 │ 0.896 ms (38.1 GFLOP/s) │ 0.32 ms (108 GFLOP/s) │                ~2.8× │
-├──────┼─────────────────────────┼───────────────────────┼──────────────────────┤
-│  512 │  8.08 ms (33.8 GFLOP/s) │ 2.43 ms (113 GFLOP/s) │                ~3.3× │
-├──────┼─────────────────────────┼───────────────────────┼──────────────────────┤
-│ 1024 │  68.7 ms (31.9 GFLOP/s) │ 19.0 ms (114 GFLOP/s) │                ~3.6× │
-└──────┴─────────────────────────┴───────────────────────┴──────────────────────┘
+| n    | Ric                     | OpenBLAS (1 thread)   | Ric slower than BLAS |
+|------|-------------------------|-----------------------|----------------------|
+| 256  | 0.896 ms (38.1 GFLOP/s) | 0.32 ms (108 GFLOP/s) | ~2.8×                |
+| 512  | 8.08 ms (33.8 GFLOP/s)  | 2.43 ms (113 GFLOP/s) | ~3.3×                |
+| 1024 | 68.7 ms (31.9 GFLOP/s)  | 19.0 ms (114 GFLOP/s) | ~3.6×                |
