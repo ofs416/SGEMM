@@ -125,3 +125,18 @@ Stores (`FPSt`, 4 cycles) and the LSUs (4 cycles) are close behind but not bindi
 | 256  | 0.896 ms (38.1 GFLOP/s) | 0.32 ms (108 GFLOP/s) | ~2.8×                |
 | 512  | 8.08 ms (33.8 GFLOP/s)  | 2.43 ms (113 GFLOP/s) | ~3.3×                |
 | 1024 | 68.7 ms (31.9 GFLOP/s)  | 19.0 ms (114 GFLOP/s) | ~3.6×                |
+
+
+Here we observe that we approached near the calculated upper bound, falling short due to memory utilisation which will be seen in AMD uProf. The results above show we are now far close to the performance of OpenBlas, not just raw speed, but scaling-wise too with increasing N (although still not scaling as well). The table below indicates where these speedups arise.
+
+| n    | scalar      | vectorised   | vectorisation speedup |
+|------|-------------|--------------|-----------------------|
+| 256  | 5.3 GFLOP/s | 38.1 GFLOP/s | ~7.2×                 |
+| 512  | 5.3 GFLOP/s | 33.8 GFLOP/s | ~6.4×                 |
+| 1024 | 5.3 GFLOP/s | 31.9 GFLOP/s | ~6.1×                 |
+
+So the more contiguous memory access allowed by performing the outer-product yields better scaling, whilst most of the raw throughput arises from the vectorised instructions such as vfmadd213ps.
+
+# Next-Step
+
+There are still plenty of gains left on the table. Next we will introduce tiling, in particular 1D cahce tiling, which aims to make the most of each load into memory. Following this we will explore register tiling.
