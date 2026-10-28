@@ -137,6 +137,6 @@ Here we observe that we approached near the calculated upper bound, falling shor
 
 So the more contiguous memory access allowed by performing the outer-product yields better scaling, whilst most of the raw throughput arises from the vectorised instructions such as vfmadd213ps.
 
-# Next-Step
+# Next Step
 
-There are still plenty of gains left on the table. Next we will introduce tiling, in particular 1D cahce tiling, which aims to make the most of each load into memory. Following this we will explore register tiling.
+There are still plenty of gains left on the table. Next we will introduce tiling, in particular 1D cache tiling, which aims to make the most of each load into memory. Following this we will explore register tiling.
