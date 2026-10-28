@@ -186,3 +186,19 @@ That is 2x the ric/tile kernel (~43 GFLOP/s), but below the 25.6 flops/cycle (~1
 
 The bottleneck is again `Zn3FPP45`: all 24 vector memory uOps (20 loads, 4 stores) go through its 2 units, 24 / 2 = 12 cycles.
 The FMA pipes (`FPP0/1`) are busy 8 of 12 cycles, so the kernel is still memory-op bound, but much closer to FMA bound than ric (2 of 6).
+
+# Google Benchmark
+
+| n    | tiled                  | unrolled                | speedup | slower than OpenBLAS |
+|------|------------------------|-------------------------|---------|----------------------|
+| 256  | 0.932 ms (36.7 GFLOP/s)| 0.590 ms (58.2 GFLOP/s) | 1.58×   | ~1.9×                |
+| 512  | 7.47 ms (36.5 GFLOP/s) | 5.33 ms (50.3 GFLOP/s)  | 1.40×   | ~2.2×                |
+| 1024 | 64.8 ms (33.9 GFLOP/s) | 50.5 ms (43.1 GFLOP/s)  | 1.28×   | ~2.7×                |
+
+Here we observe the tiling across both I and K leads to a respectable speed up. So tiling and reusing the data already in the cache, followed by an unroll which decrease mem-ops per iteration, has yielded the results we expected, altough we fall short of the upper limit we calculated, the cause of which will likely be found with AMD uProf.
+
+# Next Step
+
+So far we have only tiled across one dimension, which increases the number of times B is used once loaded into cache. Next we will extend this to 2-dimensional tiling; tiling across not just J, but also across I. Meaning accessing C is more efficient as the C tile stays in cache. This can then be extended to tiling across J, I and K, allowing more efficient access of A and B at the expense of C and is only worthwhile when N is large. 
+
+The next major performance boost will come from register blocking. Tiling focuses on reducing traffic to slow memory by ensuring as many loads come from L1, whilst register blocking focuses on allowing it to consume L1 as efficiently as possible.
