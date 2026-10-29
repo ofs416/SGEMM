@@ -10,7 +10,7 @@ Each kernel's hot inner loop is mirrored in `src/mk_*.cpp` (e.g. `mk_tile_unroll
 
 The reference compiler is clang (the project builds with it by default), so the asm you analyse is the asm that was benchmarked.
 
-Reference peak for the Ryzen 5 5500 (Zen 3): 2 FMA ports x 8 floats x 2 flops = 32 flops/cycle, about 130 GFLOP/s at ~4 GHz. OpenBLAS (single thread) reaches ~115.
+Reference peak for the Ryzen 5 5500 (Zen 3): 2 FMA ports x 8 floats x 2 flops = 32 flops/cycle, about 130 GFLOP/s at ~4 GHz. OpenBLAS (single thread) reaches ~109-118.
 
 ### Step 1: `llvm-mca` on the inner loop
 
@@ -74,14 +74,14 @@ Run the tests:
 ctest --test-dir build --output-on-failure
 ```
 
-Run the benchmarks (single-threaded, naive vs OpenBLAS):
+Run the benchmarks (single-threaded, n = 256 to 4096, kernels vs OpenBLAS; the full run takes about 20 minutes, mostly naive at n=4096):
 
 ```sh
 ./build/bench_sgemm
 ./build/bench_sgemm --benchmark_filter='naive/256'   # a subset
 ```
 
-All numbers below were measured with clang 18.1.3 on a Ryzen 5 5500 (mean of 10 repetitions, single thread). To benchmark without compiler flags, configure a separate build directory, e.g. `cmake -S . -B build-O0 -DCMAKE_BUILD_TYPE=None`, and edit the `-march=native` option in `CMakeLists.txt`.
+All numbers below were measured with clang 18.1.3 on a Ryzen 5 5500 (mean of 10 repetitions, single thread; naive at n=2048 and 4096 is too slow and uses 3 repetitions). To benchmark without compiler flags, configure a separate build directory, e.g. `cmake -S . -B build-O0 -DCMAKE_BUILD_TYPE=None`, and edit the `-march=native` option in `CMakeLists.txt`.
 
 ## 1. Naive
 
@@ -104,17 +104,21 @@ for (std::size_t i = 0; i < M; ++i) {
 
 | n    | naive                  | OpenBLAS (1 thread)   | naive slower by |
 |------|------------------------|-----------------------|-----------------|
-| 256  | 50.2 ms (0.68 GFLOP/s) | 0.32 ms (108 GFLOP/s) | ~158×           |
-| 512  | 410 ms (0.67 GFLOP/s)  | 2.43 ms (113 GFLOP/s) | ~169×           |
-| 1024 | 4004 ms (0.54 GFLOP/s) | 19.0 ms (114 GFLOP/s) | ~211×           |
+| 256  | 51.0 ms (0.68 GFLOP/s)   | 0.318 ms (109 GFLOP/s) | ~160×           |
+| 512  | 417 ms (0.67 GFLOP/s)    | 2.45 ms (113 GFLOP/s)  | ~170×           |
+| 1024 | 3984 ms (0.56 GFLOP/s)   | 19.4 ms (115 GFLOP/s)  | ~205×           |
+| 2048 | 48166 ms (0.37 GFLOP/s)  | 153 ms (116 GFLOP/s)   | ~315×           |
+| 4096 | 428048 ms (0.33 GFLOP/s) | 1203 ms (118 GFLOP/s)  | ~356×           |
 
 ### 1.2 `-O3 -march=native`
 
 | n    | naive                  | OpenBLAS (1 thread)   | naive slower by | flag speedup |
 |------|------------------------|-----------------------|-----------------|--------------|
-| 256  | 35.7 ms (0.96 GFLOP/s) | 0.32 ms (108 GFLOP/s) | ~112×           | 1.4×         |
-| 512  | 351 ms (0.78 GFLOP/s)  | 2.43 ms (113 GFLOP/s) | ~144×           | 1.2×         |
-| 1024 | 4070 ms (0.54 GFLOP/s) | 19.0 ms (114 GFLOP/s) | ~214×           | 1.0×         |
+| 256  | 35.5 ms (0.97 GFLOP/s)   | 0.318 ms (109 GFLOP/s) | ~112×           | 1.4×         |
+| 512  | 343 ms (0.81 GFLOP/s)    | 2.45 ms (113 GFLOP/s)  | ~140×           | 1.2×         |
+| 1024 | 4183 ms (0.53 GFLOP/s)   | 19.4 ms (115 GFLOP/s)  | ~216×           | 1.0×         |
+| 2048 | 60846 ms (0.29 GFLOP/s)  | 153 ms (116 GFLOP/s)   | ~398×           | 0.8×         |
+| 4096 | 501859 ms (0.28 GFLOP/s) | 1203 ms (118 GFLOP/s)  | ~417×           | 0.9×         |
 
 OpenBLAS is a prebuilt library, so its numbers don't depend on these flags.
 
@@ -123,9 +127,11 @@ OpenBLAS is a prebuilt library, so its numbers don't depend on these flags.
 
 | n    | `-O0`                  | `-O3`          | `-O3 -march=native` | `-O0` → `-O3` speedup |
 |------|------------------------|----------------|---------------------|-----------------------|
-| 256  | 50.2 ms (0.68 GFLOP/s) | 26.8 ms (1.27) | 35.7 ms (0.96)      | 1.9×                  |
-| 512  | 410 ms (0.67)          | 298 ms (0.91)  | 351 ms (0.78)       | 1.4×                  |
-| 1024 | 4004 ms (0.54)         | 4009 ms (0.54) | 4070 ms (0.54)      | 1.0×                  |
+| 256  | 51.0 ms (0.68 GFLOP/s)   | 27.4 ms (1.27)   | 35.5 ms (0.97)   | 1.9×                  |
+| 512  | 417 ms (0.67)            | 314 ms (0.89)    | 343 ms (0.81)    | 1.3×                  |
+| 1024 | 3984 ms (0.56)           | 4112 ms (0.54)   | 4183 ms (0.53)   | 1.0×                  |
+| 2048 | 48166 ms (0.37)          | 58414 ms (0.31)  | 60846 ms (0.29)  | 0.8×                  |
+| 4096 | 428048 ms (0.33)         | 486009 ms (0.29) | 501859 ms (0.28) | 0.9×                  |
 
 
 ## 2. Loop reorder (`sgemm_ric`)
@@ -146,15 +152,17 @@ for (std::size_t i = 0; i < M; ++i) {
 }
 ```
 
-This only reorders the loops and does no tiling, so `ric` (reordered loops) is not yet the tiled version. Rows of `B` and `C` are still streamed in full for every `i`, so once a row no longer fits in cache the speed drops with `n` (38.1 to 31.9 GFLOP/s below).
+This only reorders the loops and does no tiling, so `ric` (reordered loops) is not yet the tiled version. Rows of `B` and `C` are still streamed in full for every `i`, so once a row no longer fits in cache the speed drops with `n` (38.0 GFLOP/s at 256 to 11.9 at 4096, with a sharp drop once `n` reaches 2048).
 
 ### 2.1 `-O3 -march=native`
 
 | n    | reordered              | OpenBLAS (1 thread)   | slower than OpenBLAS | speedup over naive |
 |------|------------------------|-----------------------|----------------------|--------------------|
-| 256  | 0.896 ms (38.1 GFLOP/s)| 0.32 ms (108 GFLOP/s) | ~2.8×                | ~40×               |
-| 512  | 8.08 ms (33.8 GFLOP/s) | 2.43 ms (113 GFLOP/s) | ~3.3×                | ~43×               |
-| 1024 | 68.7 ms (31.9 GFLOP/s) | 19.0 ms (114 GFLOP/s) | ~3.6×                | ~59×               |
+| 256  | 0.913 ms (38.0 GFLOP/s)  | 0.318 ms (109 GFLOP/s) | ~2.9×                | ~39×               |
+| 512  | 7.96 ms (34.9 GFLOP/s)   | 2.45 ms (113 GFLOP/s)  | ~3.2×                | ~43×               |
+| 1024 | 67.5 ms (32.9 GFLOP/s)   | 19.4 ms (115 GFLOP/s)  | ~3.5×                | ~62×               |
+| 2048 | 1162 ms (15.3 GFLOP/s)   | 153 ms (116 GFLOP/s)   | ~7.6×                | ~52×               |
+| 4096 | 11924 ms (11.9 GFLOP/s)  | 1203 ms (118 GFLOP/s)  | ~9.9×                | ~42×               |
 
 The gap was closed considerably with these cache hits. Furthermore it now scales far better with n. The scaling is improved by the decrease in cache-hits, whilst the rest of the speed up is actually from thge compilers ability to now vectorise this.
 
@@ -165,9 +173,11 @@ Same kernel built with and without auto-vectorisation (`-fno-vectorize -fno-slp-
 
 | n    | scalar      | vectorised   | vectorisation speedup |
 |------|-------------|--------------|-----------------------|
-| 256  | 5.3 GFLOP/s | 38.1 GFLOP/s | ~7.2×                 |
-| 512  | 5.3 GFLOP/s | 33.8 GFLOP/s | ~6.4×                 |
-| 1024 | 5.3 GFLOP/s | 31.9 GFLOP/s | ~6.1×                 |
+| 256  | 5.3 GFLOP/s | 38.0 GFLOP/s | ~7.2×                 |
+| 512  | 5.3 GFLOP/s | 34.9 GFLOP/s | ~6.6×                 |
+| 1024 | 5.3 GFLOP/s | 32.9 GFLOP/s | ~6.3×                 |
+| 2048 | 5.0 GFLOP/s | 15.3 GFLOP/s | ~3.0×                 |
+| 4096 | 4.9 GFLOP/s | 11.9 GFLOP/s | ~2.4×                 |
 
 
 
@@ -203,11 +213,13 @@ Mean of 10 repetitions.
 
 | n    | tiled                  | OpenBLAS (1 thread)   | slower than OpenBLAS | speedup over reordered |
 |------|------------------------|-----------------------|----------------------|------------------------|
-| 256  | 0.932 ms (36.7 GFLOP/s)| 0.32 ms (108 GFLOP/s) | ~2.9×                | ~0.96×                 |
-| 512  | 7.47 ms (36.5 GFLOP/s) | 2.43 ms (113 GFLOP/s) | ~3.1×                | ~1.08×                 |
-| 1024 | 64.8 ms (33.9 GFLOP/s) | 19.0 ms (114 GFLOP/s) | ~3.4×                | ~1.06×                 |
+| 256  | 0.967 ms (36.1 GFLOP/s)  | 0.318 ms (109 GFLOP/s) | ~3.0×                | ~0.94×                 |
+| 512  | 7.50 ms (37.0 GFLOP/s)   | 2.45 ms (113 GFLOP/s)  | ~3.1×                | ~1.06×                 |
+| 1024 | 64.0 ms (34.8 GFLOP/s)   | 19.4 ms (115 GFLOP/s)  | ~3.3×                | ~1.05×                 |
+| 2048 | 574 ms (31.0 GFLOP/s)    | 153 ms (116 GFLOP/s)   | ~3.8×                | ~2.02×                 |
+| 4096 | 5637 ms (25.3 GFLOP/s)   | 1203 ms (118 GFLOP/s)  | ~4.7×                | ~2.12×                 |
 
-Tiling `k` alone gives little over the reordered kernel (none at n=256, ~1.06-1.08× at 512 and 1024). Each tile still re-reads and re-writes `C` on every `k` step, so the load/store count is unchanged (see 3.2). The remaining gap to OpenBLAS is mostly register blocking and tiling `j` as well.
+Tiling `k` alone gives little over the reordered kernel up to n=1024 (none at n=256, ~1.05× at 512 and 1024), but it pays off once the rows of `B` no longer stay cached: ~2.0× at n=2048 and ~2.1× at n=4096, where the reordered kernel collapses to 15.3 and 11.9 GFLOP/s. Each tile still re-reads and re-writes `C` on every `k` step, so the load/store count is unchanged (see 3.2). The remaining gap to OpenBLAS is mostly register blocking and tiling `j` as well.
 
 ### 3.2 Unrolling `k` by 4 (`sgemm_tile_unroll`)
 
@@ -236,8 +248,10 @@ Mean of 10 repetitions.
 
 | n    | tiled                  | unrolled                | speedup | slower than OpenBLAS |
 |------|------------------------|-------------------------|---------|----------------------|
-| 256  | 0.932 ms (36.7 GFLOP/s)| 0.590 ms (58.2 GFLOP/s) | 1.58×   | ~1.9×                |
-| 512  | 7.47 ms (36.5 GFLOP/s) | 5.33 ms (50.3 GFLOP/s)  | 1.40×   | ~2.2×                |
-| 1024 | 64.8 ms (33.9 GFLOP/s) | 50.5 ms (43.1 GFLOP/s)  | 1.28×   | ~2.7×                |
+| 256  | 0.967 ms (36.1 GFLOP/s)  | 0.586 ms (59.9 GFLOP/s) | 1.65×   | ~1.8×                |
+| 512  | 7.50 ms (37.0 GFLOP/s)   | 5.50 ms (50.5 GFLOP/s)  | 1.36×   | ~2.2×                |
+| 1024 | 64.0 ms (34.8 GFLOP/s)   | 49.6 ms (44.8 GFLOP/s)  | 1.29×   | ~2.6×                |
+| 2048 | 574 ms (31.0 GFLOP/s)    | 487 ms (36.6 GFLOP/s)   | 1.18×   | ~3.2×                |
+| 4096 | 5637 ms (25.3 GFLOP/s)   | 3747 ms (37.9 GFLOP/s)  | 1.50×   | ~3.1×                |
 
-The gain shrinks as `n` grows because the kernel becomes limited by streaming `B` and `C` through the cache rather than by `C` read-modify-writes. The next steps are tiling `j` as well and a register-blocked microkernel.
+The gain shrinks as `n` grows from 256 to 2048 (1.65× to 1.18×) because the kernel becomes limited by streaming `B` and `C` through the cache rather than by `C` read-modify-writes. It recovers to 1.50× at 4096 because tile degrades further there (25.3 GFLOP/s) while the unrolled kernel holds ~38. The next steps are tiling `j` as well and a register-blocked microkernel.

@@ -26,11 +26,14 @@ static void BM_sgemm(benchmark::State& state) {
 }
 BENCHMARK(BM_sgemm<sgemm_naive>)->Name("naive")->RangeMultiplier(2)->Range(256, 1024)
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
-BENCHMARK(BM_sgemm<sgemm_ric>)->Name("ric")->RangeMultiplier(2)->Range(256, 1024)
+// Too slow (minutes per run at 4096) for 10 repetitions
+BENCHMARK(BM_sgemm<sgemm_naive>)->Name("naive")->Arg(2048)->Arg(4096)
+    ->Unit(benchmark::kMillisecond)->Repetitions(3);
+BENCHMARK(BM_sgemm<sgemm_ric>)->Name("ric")->RangeMultiplier(2)->Range(256, 4096)
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
-BENCHMARK(BM_sgemm<sgemm_tile>)->Name("tile")->RangeMultiplier(2)->Range(256, 1024)
+BENCHMARK(BM_sgemm<sgemm_tile>)->Name("tile")->RangeMultiplier(2)->Range(256, 4096)
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
-BENCHMARK(BM_sgemm<sgemm_tile_unroll>)->Name("tile_unroll")->RangeMultiplier(2)->Range(256, 1024)
+BENCHMARK(BM_sgemm<sgemm_tile_unroll>)->Name("tile_unroll")->RangeMultiplier(2)->Range(256, 4096)
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
 
 // Reference: OpenBLAS, same row-major layout and no transposes
@@ -45,7 +48,7 @@ static void BM_sgemm_openblas(benchmark::State& state) {
     }
     set_counters(state, n);
 }
-BENCHMARK(BM_sgemm_openblas)->Name("openblas")->RangeMultiplier(2)->Range(256, 1024)
+BENCHMARK(BM_sgemm_openblas)->Name("openblas")->RangeMultiplier(2)->Range(256, 4096)
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
 
 // Console output limited to the mean, median and cv aggregate rows

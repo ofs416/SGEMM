@@ -119,9 +119,11 @@ We know zen3 can start 2 FMA/cycle (16 GFLOP/s), therefore 8 independent chains 
 
 | n    | Naive `-O0`            | Naive `-O3 -march=native` | OpenBLAS (1 thread)   | Naive slower by |
 |------|------------------------|---------------------------|-----------------------|-----------------|
-| 256  | 50.2 ms (0.68 GFLOP/s) | 35.7 ms (0.96 GFLOP/s)    | 0.32 ms (108 GFLOP/s) | ~112×           |
-| 512  | 410 ms (0.67 GFLOP/s)  | 351 ms (0.78 GFLOP/s)     | 2.43 ms (113 GFLOP/s) | ~144×           |
-| 1024 | 4004 ms (0.54 GFLOP/s) | 4070 ms (0.54 GFLOP/s)    | 19.0 ms (114 GFLOP/s) | ~214×           |
+| 256  | 51.0 ms (0.68 GFLOP/s)   | 35.5 ms (0.97 GFLOP/s)    | 0.318 ms (109 GFLOP/s) | ~112×           |
+| 512  | 417 ms (0.67 GFLOP/s)    | 343 ms (0.81 GFLOP/s)     | 2.45 ms (113 GFLOP/s) | ~140×           |
+| 1024 | 3984 ms (0.56 GFLOP/s)   | 4183 ms (0.53 GFLOP/s)    | 19.4 ms (115 GFLOP/s) | ~216×           |
+| 2048 | 48166 ms (0.37 GFLOP/s)  | 60846 ms (0.29 GFLOP/s)   | 153 ms (116 GFLOP/s)  | ~398×           |
+| 4096 | 428048 ms (0.33 GFLOP/s) | 501859 ms (0.28 GFLOP/s)  | 1203 ms (118 GFLOP/s) | ~417×           |
 
  Comparing this to the Google Benchmark results, we observe we only hit a fraction of this. Indicating that we are poorly utilising the cache.
 

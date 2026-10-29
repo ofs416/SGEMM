@@ -122,18 +122,22 @@ Stores (`FPSt`, 4 cycles) and the LSUs (4 cycles) are close behind but not bindi
 
 | n    | Ric                     | OpenBLAS (1 thread)   | Ric slower than BLAS |
 |------|-------------------------|-----------------------|----------------------|
-| 256  | 0.896 ms (38.1 GFLOP/s) | 0.32 ms (108 GFLOP/s) | ~2.8×                |
-| 512  | 8.08 ms (33.8 GFLOP/s)  | 2.43 ms (113 GFLOP/s) | ~3.3×                |
-| 1024 | 68.7 ms (31.9 GFLOP/s)  | 19.0 ms (114 GFLOP/s) | ~3.6×                |
+| 256  | 0.913 ms (38.0 GFLOP/s) | 0.318 ms (109 GFLOP/s) | ~2.9×                |
+| 512  | 7.96 ms (34.9 GFLOP/s)  | 2.45 ms (113 GFLOP/s) | ~3.2×                |
+| 1024 | 67.5 ms (32.9 GFLOP/s)  | 19.4 ms (115 GFLOP/s) | ~3.5×                |
+| 2048 | 1162 ms (15.3 GFLOP/s)  | 153 ms (116 GFLOP/s)  | ~7.6×                |
+| 4096 | 11924 ms (11.9 GFLOP/s) | 1203 ms (118 GFLOP/s) | ~9.9×                |
 
 
 Here we observe that we approached near the calculated upper bound, falling short due to memory utilisation which will be seen in AMD uProf. The results above show we are now far close to the performance of OpenBlas, not just raw speed, but scaling-wise too with increasing N (although still not scaling as well). The table below indicates where these speedups arise.
 
 | n    | scalar      | vectorised   | vectorisation speedup |
 |------|-------------|--------------|-----------------------|
-| 256  | 5.3 GFLOP/s | 38.1 GFLOP/s | ~7.2×                 |
-| 512  | 5.3 GFLOP/s | 33.8 GFLOP/s | ~6.4×                 |
-| 1024 | 5.3 GFLOP/s | 31.9 GFLOP/s | ~6.1×                 |
+| 256  | 5.3 GFLOP/s | 38.0 GFLOP/s | ~7.2×                 |
+| 512  | 5.3 GFLOP/s | 34.9 GFLOP/s | ~6.6×                 |
+| 1024 | 5.3 GFLOP/s | 32.9 GFLOP/s | ~6.3×                 |
+| 2048 | 5.0 GFLOP/s | 15.3 GFLOP/s | ~3.0×                 |
+| 4096 | 4.9 GFLOP/s | 11.9 GFLOP/s | ~2.4×                 |
 
 So the more contiguous memory access allowed by performing the outer-product yields better scaling, whilst most of the raw throughput arises from the vectorised instructions such as vfmadd213ps.
 

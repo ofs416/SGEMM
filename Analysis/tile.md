@@ -191,9 +191,11 @@ The FMA pipes (`FPP0/1`) are busy 8 of 12 cycles, so the kernel is still memory-
 
 | n    | tiled                  | unrolled                | speedup | slower than OpenBLAS |
 |------|------------------------|-------------------------|---------|----------------------|
-| 256  | 0.932 ms (36.7 GFLOP/s)| 0.590 ms (58.2 GFLOP/s) | 1.58×   | ~1.9×                |
-| 512  | 7.47 ms (36.5 GFLOP/s) | 5.33 ms (50.3 GFLOP/s)  | 1.40×   | ~2.2×                |
-| 1024 | 64.8 ms (33.9 GFLOP/s) | 50.5 ms (43.1 GFLOP/s)  | 1.28×   | ~2.7×                |
+| 256  | 0.967 ms (36.1 GFLOP/s)  | 0.586 ms (59.9 GFLOP/s) | 1.65×   | ~1.8×                |
+| 512  | 7.50 ms (37.0 GFLOP/s)   | 5.50 ms (50.5 GFLOP/s)  | 1.36×   | ~2.2×                |
+| 1024 | 64.0 ms (34.8 GFLOP/s)   | 49.6 ms (44.8 GFLOP/s)  | 1.29×   | ~2.6×                |
+| 2048 | 574 ms (31.0 GFLOP/s)    | 487 ms (36.6 GFLOP/s)   | 1.18×   | ~3.2×                |
+| 4096 | 5637 ms (25.3 GFLOP/s)   | 3747 ms (37.9 GFLOP/s)  | 1.50×   | ~3.1×                |
 
 Here we observe the tiling across both I and K leads to a respectable speed up. So tiling and reusing the data already in the cache, followed by an unroll which decrease mem-ops per iteration, has yielded the results we expected, altough we fall short of the upper limit we calculated, the cause of which will likely be found with AMD uProf.
 
