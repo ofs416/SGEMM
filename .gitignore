@@ -73,3 +73,5 @@ gcc_cs.md
 .env
 
 cachegrind*
+
+bench/results/
