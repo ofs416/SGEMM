@@ -35,6 +35,8 @@ BENCHMARK(BM_sgemm<sgemm_tile>)->Name("tile")->RangeMultiplier(2)->Range(256, 40
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
 BENCHMARK(BM_sgemm<sgemm_tile_unroll>)->Name("tile_unroll")->RangeMultiplier(2)->Range(256, 4096)
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
+BENCHMARK(BM_sgemm<sgemm_2dtile>)->Name("2dtile")->RangeMultiplier(2)->Range(256, 4096)
+    ->Unit(benchmark::kMillisecond)->Repetitions(10);
 
 // Reference: OpenBLAS, same row-major layout and no transposes
 static void BM_sgemm_openblas(benchmark::State& state) {
