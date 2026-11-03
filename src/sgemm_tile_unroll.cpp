@@ -9,7 +9,7 @@ void sgemm_tile_unroll(std::size_t M, std::size_t N, std::size_t L,
                  float alpha, const float* A, const float* B,
                  float beta, float* C) {
 
-        constexpr std::size_t KC = 32;   // B tile ≈ KC*N*4 bytes, ≤ ~256 KB for ryzen 5500
+        constexpr std::size_t KC = 64;   // B tile ≈ KC*N*4 bytes, ≤ ~256 KB for ryzen 5500
 
         for (std::size_t i = 0; i < M * N; i++) {
             C[i] *= beta;
