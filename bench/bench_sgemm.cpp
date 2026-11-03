@@ -37,6 +37,15 @@ BENCHMARK(BM_sgemm<sgemm_tile_unroll>)->Name("tile_unroll")->RangeMultiplier(2)-
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
 BENCHMARK(BM_sgemm<sgemm_2dtile>)->Name("2dtile")->RangeMultiplier(2)->Range(256, 4096)
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
+BENCHMARK(BM_sgemm<sgemm_3dtile>)->Name("3dtile")->RangeMultiplier(2)->Range(256, 4096)
+    ->Unit(benchmark::kMillisecond)->Repetitions(10);
+// n=8192 (~1.1 TFLOP per run) uses fewer repetitions
+BENCHMARK(BM_sgemm<sgemm_tile_unroll>)->Name("tile_unroll")->Arg(8192)
+    ->Unit(benchmark::kMillisecond)->Repetitions(3);
+BENCHMARK(BM_sgemm<sgemm_2dtile>)->Name("2dtile")->Arg(8192)
+    ->Unit(benchmark::kMillisecond)->Repetitions(3);
+BENCHMARK(BM_sgemm<sgemm_3dtile>)->Name("3dtile")->Arg(8192)
+    ->Unit(benchmark::kMillisecond)->Repetitions(3);
 
 // Reference: OpenBLAS, same row-major layout and no transposes
 static void BM_sgemm_openblas(benchmark::State& state) {
@@ -52,6 +61,8 @@ static void BM_sgemm_openblas(benchmark::State& state) {
 }
 BENCHMARK(BM_sgemm_openblas)->Name("openblas")->RangeMultiplier(2)->Range(256, 4096)
     ->Unit(benchmark::kMillisecond)->Repetitions(10);
+BENCHMARK(BM_sgemm_openblas)->Name("openblas")->Arg(8192)
+    ->Unit(benchmark::kMillisecond)->Repetitions(3);
 
 // Console output limited to the mean, median and cv aggregate rows
 class AggregateReporter : public benchmark::ConsoleReporter {
